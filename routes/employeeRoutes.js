@@ -7,8 +7,11 @@ const {
     updateEmployee,
     deleteEmployeeTraining,
     deleteEmployeeAbsence,
-    deleteEmployeeLeave, // Убедитесь, что этот метод импортирован
-    addEmployeeAbsence
+    deleteEmployeeLeave,
+    addEmployeeAbsence,
+    addEmployee,
+    getAllEmployees,
+    fireEmployee
 } = require('../controllers/employeeController');
 const router = express.Router();
 
@@ -21,5 +24,8 @@ router.delete('/employee/:id/trainings/:trainingId', deleteEmployeeTraining);
 router.delete('/employee/:id/absences/:absenceId', deleteEmployeeAbsence);
 router.delete('/employee/:id/leaves/:leaveId', deleteEmployeeLeave);
 router.post('/employee/:id/absences', addEmployeeAbsence);
+router.post('/employee/', addEmployee);
+router.get('/employees/', getAllEmployees);
+router.put('/employee/fire/:id', fireEmployee);
 
 module.exports = router;

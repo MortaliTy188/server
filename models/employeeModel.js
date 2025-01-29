@@ -65,6 +65,14 @@ const Employee = sequelize.define('employee', {
     additional_info: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    Fired: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true
+    },
+    fired_date: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     tableName: 'employee',

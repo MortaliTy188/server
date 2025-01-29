@@ -1,5 +1,8 @@
+// Импорт моделей
 const { Employee, TrainingEmployee, Training, TrainingCategory, Absence, Department, Position, Office } = require('../models');
+const { Op } = require('sequelize');
 
+// Получение сотрудников по департаменту
 exports.getEmployeesByDepartment = async (req, res) => {
     const { departmentId } = req.params;
 
@@ -43,6 +46,18 @@ exports.updateEmployee = async (req, res) => {
         return res.json({ message: 'Данные сотрудника успешно обновлены', employee });
     } catch (error) {
         return res.status(500).json({ message: 'Ошибка обновления данных сотрудника', error });
+    }
+};
+
+// Добавление нового сотрудника
+exports.addEmployee = async (req, res) => {
+    const employeeData = req.body;
+    try {
+        const newEmployee = await Employee.create(employeeData);
+        return res.status(201).json({ message: 'Сотрудник успешно добавлен', employee: newEmployee });
+    } catch (error) {
+        console.error('Ошибка добавления сотрудника:', error);
+        return res.status(500).json({ message: 'Ошибка добавления сотрудника', error });
     }
 };
 
@@ -164,5 +179,69 @@ exports.deleteEmployeeLeave = async (req, res) => {
     } catch (error) {
         console.error('Ошибка удаления отпуска:', error);
         return res.status(500).json({ message: 'Ошибка удаления отпуска', error });
+    }
+};
+
+// Увольнение сотрудника
+exports.fireEmployee = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Находим работника по id
+        const employee = await Employee.findByPk(id);
+
+        if (!employee) {
+            return res.status(404).json({ message: 'Работник не найден' });
+        }
+
+        // Проверка наличия будущих обучений
+        const futureTrainings = await TrainingEmployee.findAll({
+            where: {
+                employee_id: id,
+                '$training.date$': {
+                    [Op.gt]: new Date()
+                }
+            },
+            include: [{
+                model: Training,
+                as: 'training'
+            }]
+        });
+
+        if (futureTrainings.length > 0) {
+            return res.status(400).json({ message: 'Невозможно уволить сотрудника при наличии будущих обучений' });
+        }
+
+        // Обновляем поля Fired и fired_date
+        employee.Fired = true;
+        employee.fired_date = new Date();
+
+        // Удаляем будущие отгулы и отпуска
+        await Absence.destroy({
+            where: {
+                employee_id: id,
+                start_date: {
+                    [Op.gt]: new Date()
+                }
+            }
+        });
+
+        // Сохраняем изменения
+        await employee.save();
+
+        res.status(200).json({ message: 'Работник успешно уволен и будущие отгулы и отпуска удалены' });
+    } catch (error) {
+        console.error('Ошибка при увольнении работника:', error);
+        res.status(500).json({ message: 'Ошибка при увольнении работника' });
+    }
+};
+
+// Получение всех сотрудников
+exports.getAllEmployees = async (req, res) => {
+    try {
+        const employees = await Employee.findAll();
+        res.json(employees);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
